@@ -1,3 +1,8 @@
+function love.quit() --you can remove it
+  local res = love.window.showMessageBox("Warning!", "Game requested close", {"Close", "Don't Close!", enterbutton = 2}, "warning")
+  if res == 2 then return true else return false end
+end
+
 function love.load()
   fonts = {
     pou = love.graphics.newFont("assets/fonts/pou.ttf")
@@ -106,7 +111,7 @@ function love.load()
   
   songstable = love.filesystem.getDirectoryItems("songs")
 
-  if #songstable == 0 then error("No songs found") end
+  if #songstable == 0 then love.window.showMessageBox("Error", "No songs found", "error") love.event.quit() end
 
   currentsong = 1
   current = require("songs/"..songstable[currentsong].."/song")
@@ -169,8 +174,11 @@ function love.load()
  function checknote(notetype)
  if state == "play" and player.freeze <= time_ms then
   local function del(i)
-   obj.temp[i].pY = height+999
-   obj.Destroy(i,"temp")
+    local tab = obj.temp[i]
+    if tab.reserved == false then
+      obj.temp[i].pY = height+999
+      obj.Destroy(i,"temp")
+    end
   end
   for _,i in ipairs(obj.temp) do
    if obj.temp[i].sY then
@@ -339,7 +347,9 @@ if state == "stop" or state == "load" then
   player.freeze = 0
 
   for _,i in ipairs(obj.temp) do
-    obj.Destroy(i,"temp")
+    if obj.temp[tostring(i)].reserved == false then
+      obj.Destroy(i,"temp")
+    end
   end
 end
 --end
@@ -471,9 +481,11 @@ end
         obj.temp[b].pY = obj.temp[b].pY+height*dt*notespeed
       end
       if obj.temp[b].pY > height+obj.temp[b].sY+10 then
-        obj.Destroy(b,"temp")
-        if not obj.temp[b].type then
-          acc.miss = acc.miss+1
+        if obj.temp[b].reserved == false then
+          obj.Destroy(b,"temp")
+          if not obj.temp[b].type then
+            acc.miss = acc.miss+1
+          end
         end
       end
     end
@@ -494,7 +506,7 @@ end
 
 function love.draw()
 --bg
-  if current.bg then
+  if current.bg and state ~= "stop" then
     love.graphics.draw(current.bg,0,0,0,width/current.bg:getWidth(),height/current.bg:getHeight())
   else
     love.graphics.setColor(1,1,1,0.5)
@@ -510,7 +522,7 @@ love.graphics.print(pepe.."?"..pepo,300,10)
   end
   love.graphics.print(#obj.temp.."$",20,200)
   if debugmodewhyyoudontwanttodothislolimadevwellimnotreallyadevbruhxddd == true then
-    love.graphics.print("Score: "..score.. "\n misses: "..acc.miss.."\n perfect: "..acc.perfect.."\n great: "..acc.great.."\n ok: "..acc.ok.."\n accuracy: "..acc.percent.."%\n time ms: "..time_ms.."\n fps: "..love.timer.getFPS().."\n freezed until: ".. player.freeze.."\n died: "..tostring(player.died).."\n song title: "..current.title.."\n status: "..state.."\n temptime (l"..temptimelolol.left.." d"..temptimelolol.down.." u"..temptimelolol.up.." r"..temptimelolol.right..")" .."\n charstate: "..currentchar.state.."\n animationdelay: "..temptimelolol.animation)
+    love.graphics.print("Score: "..score.. "\n misses: "..acc.miss.."\n perfect: "..acc.perfect.."\n great: "..acc.great.."\n ok: "..acc.ok.."\n accuracy: "..acc.percent.."%\n time ms: "..time_ms.."\n fps: "..love.timer.getFPS().."\n freezed until: ".. player.freeze.."\n died: "..tostring(player.died).."\n song title: "..current.title.."\n status: "..state.."\n temptime (l"..temptimelolol.left.." d"..temptimelolol.down.." u"..temptimelolol.up.." r"..temptimelolol.right..")" .."\n charstate: "..currentchar.state.."\n animationdelay: "..temptimelolol.animation.."\n total notes: "..tostring(#obj.temp))
   end
 
   local function detectPress(x,y)

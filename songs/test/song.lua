@@ -20,6 +20,15 @@ module.sound = "audio.ogg"
 module.offset = 180
 module.bg = nil
 
+module.start = function(data)
+	data.obj.newDeltaFunc("a",nil,nil,function(delta,dat)
+	--[[local a = dat.obj.imgs["left"]
+	a.pY = a.pY+1]]
+	dat.obj.imgs["left"].pY = dat.obj.imgs["left"].pY+1*delta
+	return dat
+	end)
+end
+
 module.notes = {
   {1261,4};
   {1391,4};
@@ -226,6 +235,7 @@ module.notes = {
 }
 
 module.events = {
+  {0, function() module.bg = nil end};
   {5000, foo.func};
   {22807, foo2};
   {25191, function() love.event.quit() end}

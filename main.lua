@@ -27,10 +27,10 @@ function love.load()
   }
 
   obj = require("obj")
-
+	
   width = love.graphics.getWidth()
   height = love.graphics.getHeight()
-
+  
   time = 0
   time_ms = 0
 
@@ -86,7 +86,15 @@ function love.load()
 	  botplay = false,
   }
 
+  sendinfo = {
+	plr = player,
+	time = time_ms,
+	window = {sX = width, sY = height},
+	obj = obj
+  }
+
   state = "play" --play, pause, stop, load
+  oldstate = ""
   obj.newButton("stop",width-30,0,30,30,"fill",'if state == "stop" then state = "play" elseif state == "play" then state = "stop" end player.died = false')
   obj.newButton("pause",width-30,31,30,30,"line",'if state == "pause" then state = "play" elseif state == "play" then state = "pause" end')
   obj.newButton("botplay",width-30,62,30,30,"fill",'if settings.botplay == false then settings.botplay = true else settings.botplay = false end')
@@ -99,10 +107,10 @@ function love.load()
     obj.newButton("RightController",width/4*3,0,width/4,height,"line",'checknote("right") glow(true, "right") presses.right = true')
   end
 
-  obj.CreateImg("left",width*0.25+noteoffset,height*0.8,height*notesize/baseimg:getHeight(),height*notesize/baseimg:getHeight(),0,baseimg)
-  obj.CreateImg("down",width*(0.25+height*notesize/baseimg:getHeight()*1)+noteoffset,height*0.8,height*notesize/baseimg:getHeight(),height*notesize/baseimg:getHeight(),0,baseimg)
-  obj.CreateImg("up",width*(0.25+height*notesize/baseimg:getHeight()*2)+noteoffset,height*0.8,height*notesize/baseimg:getHeight(),height*notesize/baseimg:getHeight(),0,baseimg)
-  obj.CreateImg("right",width*(0.25+height*notesize/baseimg:getHeight()*3)+noteoffset,height*0.8,height*notesize/baseimg:getHeight(),height*notesize/baseimg:getHeight(),0,baseimg)
+  leftarrow = obj.CreateImg("left",width*0.25+noteoffset,height*0.8,height*notesize/baseimg:getHeight(),height*notesize/baseimg:getHeight(),0,baseimg)
+  downarrow = obj.CreateImg("down",width*(0.25+height*notesize/baseimg:getHeight()*1)+noteoffset,height*0.8,height*notesize/baseimg:getHeight(),height*notesize/baseimg:getHeight(),0,baseimg)
+  uparrow = obj.CreateImg("up",width*(0.25+height*notesize/baseimg:getHeight()*2)+noteoffset,height*0.8,height*notesize/baseimg:getHeight(),height*notesize/baseimg:getHeight(),0,baseimg)
+  rightarrow = obj.CreateImg("right",width*(0.25+height*notesize/baseimg:getHeight()*3)+noteoffset,height*0.8,height*notesize/baseimg:getHeight(),height*notesize/baseimg:getHeight(),0,baseimg)
 
   obj.CreateImg(".leftpress",width*10,height*10,height*notesize/baseimg:getHeight(),height*notesize/baseimg:getHeight(),0,basepressimg,"folder1")
   obj.CreateImg(".downpress",width*10,height*10,height*notesize/baseimg:getHeight(),height*notesize/baseimg:getHeight(),0,basepressimg,"folder1")
@@ -130,6 +138,7 @@ function love.load()
   end
 
   if current then
+	current.start(sendinfo)
     local file = love.sound.newSoundData("songs/"..songstable[currentsong].."/"..current.sound)
     songaudio = love.audio.newSource(file,"stream")
     songaudio:setVolume(0.4)
@@ -168,8 +177,6 @@ function love.load()
      createNote()
    end
  end
-
- sendinfo = {}
 
  function checknote(notetype)
  if state == "play" and player.freeze <= time_ms then
@@ -236,21 +243,21 @@ function love.load()
   function glow(on, notetype)
     if on == true then
       if notetype == "left" then
-        obj.folder1[".leftpress"].pX = width*0.25+noteoffset
-        obj.folder1[".leftpress"].pY = height*0.8
+        obj.folder1[".leftpress"].pX = leftarrow.pX --width*0.25+noteoffset
+        obj.folder1[".leftpress"].pY = leftarrow.pY --height*0.8
         currentchar.state = "left"
         pepe = pepe+1
       elseif notetype == "down" then
-        obj.folder1[".downpress"].pX = width*(0.25+height*notesize/baseimg:getHeight()*1)+noteoffset
-        obj.folder1[".downpress"].pY = height*0.8
+        obj.folder1[".downpress"].pX = downarrow.pX --width*(0.25+height*notesize/baseimg:getHeight()*1)+noteoffset
+        obj.folder1[".downpress"].pY = downarrow.pY --height*0.8
         currentchar.state = "down"
       elseif notetype == "up" then
-        obj.folder1[".uppress"].pX = width*(0.25+height*notesize/baseimg:getHeight()*2)+noteoffset
-        obj.folder1[".uppress"].pY = height*0.8
+        obj.folder1[".uppress"].pX = uparrow.pX --width*(0.25+height*notesize/baseimg:getHeight()*2)+noteoffset
+        obj.folder1[".uppress"].pY = uparrow.pY --height*0.8
         currentchar.state = "up"
       elseif notetype == "right" then
-        obj.folder1[".rightpress"].pX = width*(0.25+height*notesize/baseimg:getHeight()*3)+noteoffset
-        obj.folder1[".rightpress"].pY = height*0.8
+        obj.folder1[".rightpress"].pX = rightarrow.pX --width*(0.25+height*notesize/baseimg:getHeight()*3)+noteoffset
+        obj.folder1[".rightpress"].pY = rightarrow.pY --height*0.8
         currentchar.state = "right"
       end
       temptimelolol.animation = 200
@@ -269,11 +276,18 @@ end
 
 function love.update(dt)
   sendinfo = {
-    plr = player,
-    time = time_ms,
-    window = {sX = width, sY = height}
+	plr = player,
+	time = time_ms,
+	window = {sX = width, sY = height},
+	obj = obj,
    }
-
+	for k,t in ipairs(obj.deltaFunc) do
+		local f = obj.deltaFunc[t]
+		f.timestamp = f.timestamp+dt
+		f.obj = obj
+		local new = f.func(dt,f)
+		obj = new.obj
+	end
   if current.events and current.events[currentevent] then
     if time_ms >= current.events[currentevent][1] then
       current.events[currentevent][2](sendinfo)
@@ -285,14 +299,14 @@ function love.update(dt)
   width = love.graphics.getWidth()
   height = love.graphics.getHeight()
 
-      obj.imgs["left"].pX = width*0.25+noteoffset
+      --[[obj.imgs["left"].pX = width*0.25+noteoffset
       obj.imgs["left"].pY = height*0.8
       obj.imgs["down"].pX = width*(0.25+height*notesize/baseimg:getHeight()*1)+noteoffset
       obj.imgs["down"].pY = height*0.8
       obj.imgs["up"].pX = width*(0.25+height*notesize/baseimg:getHeight()*2)+noteoffset
       obj.imgs["up"].pY = height*0.8
       obj.imgs["right"].pX = width*(0.25+height*notesize/baseimg:getHeight()*3)+noteoffset
-      obj.imgs["right"].pY = height*0.8
+      obj.imgs["right"].pY = height*0.8]]
   --end
 
   if temptimelolol.animation < 0 then
@@ -333,6 +347,8 @@ function love.update(dt)
  end
 --stop
 if state == "stop" or state == "load" then
+  obj.Destroy("left","imgs") obj.Destroy("right","imgs") obj.Destroy("up","imgs") obj.Destroy("down","imgs")
+  
   temptimelolol.animation = 0
   time = 0
   time_ms = 0
@@ -461,6 +477,11 @@ end
   end
 --end
  
+--load initial songfile function
+	if state == "play" and (oldstate == "stop" or oldstate == "load") and current then
+		current.start(sendinfo)
+	end
+ 
   if state == "play" then
     time = time+dt
     time_ms = time*1000
@@ -498,6 +519,7 @@ end
     local file = love.sound.newSoundData("songs/"..songstable[currentsong].."/"..current.sound)
     songaudio = love.audio.newSource(file,"stream")
     songaudio:setVolume(0.4)
+	current.start(sendinfo)
     state = "play"
   end
 --end
@@ -591,6 +613,11 @@ love.graphics.print(pepe.."?"..pepo,300,10)
 --end
 
   if state == "play" or state == "pause" then
+    if obj.imgs.left.reserved == true then obj.CreateImg("left",width*0.25+noteoffset,height*0.8,height*notesize/baseimg:getHeight(),height*notesize/baseimg:getHeight(),0,baseimg) end
+    if obj.imgs.down.reserved == true then obj.CreateImg("down",width*(0.25+height*notesize/baseimg:getHeight()*1)+noteoffset,height*0.8,height*notesize/baseimg:getHeight(),height*notesize/baseimg:getHeight(),0,baseimg) end
+    if obj.imgs.up.reserved == true then obj.CreateImg("up",width*(0.25+height*notesize/baseimg:getHeight()*2)+noteoffset,height*0.8,height*notesize/baseimg:getHeight(),height*notesize/baseimg:getHeight(),0,baseimg) end
+    if obj.imgs.right.reserved == true then obj.CreateImg("right",width*(0.25+height*notesize/baseimg:getHeight()*3)+noteoffset,height*0.8,height*notesize/baseimg:getHeight(),height*notesize/baseimg:getHeight(),0,baseimg) end
+	
     for _,i in pairs(obj.temp) do
       if i.sY and #obj.temp > 0 then
         love.graphics.draw(i.img,i.pX,i.pY,i.rot,i.sX/i.img:getWidth(),i.sY/i.img:getHeight())
@@ -608,4 +635,6 @@ love.graphics.print(pepe.."?"..pepo,300,10)
       end
     end
   end
+  oldstate = state
+  print(#obj.imgs)
 end

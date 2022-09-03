@@ -12,12 +12,13 @@ module.folder1 = {}
 
 module.chars = {}
 
-module.animations = {} --work in progress
+module.deltaFunc = {} --work in progress
 
 function module.Destroy(item,index)
   if #module[index]>0 then
     for _,i in ipairs(module[index]) do
       if i == item then
+	    if module[index][module[index][_]].reserved == true then return end
         module[index][module[index][_]].pY = 1000
         module[index][module[index][_]].reserved = true
         --table.remove(module[index],_)
@@ -91,6 +92,17 @@ function module.CreateImg(id, X, Y, sisX, sisY, rot, image, folder)
   if not folder then
     folder = "imgs"
   end
+  for _,i in pairs(module[folder]) do
+    if i.reserved == true and tostring(_) == id then
+      i.pX = X
+      i.pY = Y
+      i.sX = sisX
+      i.sY = sisY
+      i.rot = rot
+      i.reserved = false
+      return i
+    end
+  end
   table.insert(module[folder],id)
  
   module[folder][id] = {}
@@ -101,7 +113,7 @@ function module.CreateImg(id, X, Y, sisX, sisY, rot, image, folder)
   module[folder][id].sY = sisY
   module[folder][id].rot = rot
   module[folder][id].img = image
-
+  module[folder][id].reserved = false
   return module[folder][id]
 end
 
@@ -133,5 +145,25 @@ function module.newChar(path,id,x,y,sX,sY,rot)
   
   return module.chars[id]
 end
+
+function module.newDeltaFunc(id, type, item, func)
+  table.insert(module.deltaFunc,id)
+  module.deltaFunc[id] = {
+    item = item,
+    func = func,
+    timestamp = 0,
+	obj = module,
+  }
+  return module.deltaFunc[id]
+end
+
+function module.removeDeltaFunc(item)
+	for _,i in pairs(module.deltaFunc) do
+		if i==item then
+		error(1222222)
+		end
+	end
+end
+
 
 return module
